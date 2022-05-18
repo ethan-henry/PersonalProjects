@@ -11,8 +11,7 @@ from PIL import ImageGrab
 import numpy as np
 
 
-# Ideas: would it be faster to read in number of mines left and test every spot to see the probability that the mine is there
-# Using Stack and go back algorithm?
+# need to make stuck algorithmmore comprehensive: doesn't just look at a single square and try to find the best from it's perspective, but instead which block has the lowest chance of being a mine
 
 # start_time = time.time()
 # When identifying numbers, only need to scan a couple of pixels pixel (middle of box maybe, as well as side for known or flag/unknown) to cut down time needed
@@ -24,7 +23,7 @@ import numpy as np
 
 
 index = 0
-x = 16
+x = 30
 y = 16
 
 tlFirstSquare_x = 39
@@ -46,7 +45,7 @@ def updateGrid():
             block = image.crop((coord[0], coord[1], (coord[0] + 18), (coord[1] + 18)))
             pixel = block.getdata()
             if (pixel[0] == (255, 255, 255)):
-                if (pixel[153] == (255, 0, 0)):
+                if (pixel[153] == (242, 52, 24)):
                     temp.append(-1)
                     # Flag
                 else:
@@ -54,26 +53,28 @@ def updateGrid():
                     # Unknown
             else:
                 test = pixel[153]
-                if (test == (88, 0, 253)):
+                if (test == (0, 0, 248)):
                     temp.append(1)
-                elif (test == (122, 180, 139)):
+                elif (test == (143, 170, 140)):
                     temp.append(2)
-                elif (test == (226, 119, 131)):
+                elif (test == (202, 136, 133)):
                     temp.append(3)
-                elif (test == (136, 123, 169)):
+                elif (test == (131, 132, 167)):
                     temp.append(4)
-                elif (test == (178, 127, 131)):
+                elif (test == (165, 133, 132)):
                     temp.append(5)
                 elif (test == (189, 189, 189)):
                     temp.append(0)
+                elif (test == (137, 168, 169)):
+                    temp.append(6)
                 elif (test == (26, 26, 26) or test == (28, 17, 18)):
                     print('You lose :(')
+                    return False
                     # mouse.move(587, 155)
                     # mouse.click('left')
                     # temp = []
                     # grid = []
                     # coord = [437, 230]
-                    break
                 else:
                     print("idk", test)
                     block.show()
@@ -85,9 +86,6 @@ def updateGrid():
 def moveMouse(x, y):
     mouse.move(30 + (x * 16), 186 + (y * 16))
     return
-
-flagged = []
-clicked = []
 
 def moves(gridTemp):
     noMoves = True
@@ -127,29 +125,53 @@ def moves(gridTemp):
                     # print(gridTemp[j][i])
                     # print(flags, green)
                     temp = (green + flags) / (gridTemp[j][i] - flags)
-                    if (temp < best):
-                        print(greenList)
-                        bestMove = [i, j]
+                    if (temp < best) and (len(greenList) >= 1):
+                        # print(greenList)
+                        bestMove = [greenList[0][1], greenList[0][0]]
                         best = temp
     return noMoves, bestMove
 
-mouse.move(x/2 * 16 + tlFirstSquare_x, y / 2 * 16 + tlFirstSquare_y)
-mouse.click('left')
-mouse.move(5, 5)
 
-counter = 0
+def runProgram():
+    mouse.move(x/2 * 16 + tlFirstSquare_x, y / 2 * 16 + tlFirstSquare_y)
+    mouse.click('left')
+    mouse.move(5, 5)
 
-while(True):
+    counter = 0
+
+    while(True):
+        grid = updateGrid()
+
+        if (keyboard.is_pressed('q')):
+            print("YOU PRESSED EXIT")
+            return
+
+        if (not grid):
+            return
+
+        noMoves, bestMove = moves(grid)
+        if noMoves:
+            counter += 1
+        else:
+            counter = 0
+        # print(counter)
+
+        if (counter >= 3):
+            print(bestMove)
+            moveMouse(bestMove[0], bestMove[1])
+            mouse.click('left')
+            moveMouse(5, 5)
+            counter = 0
+while True:
+    flagged = []
+    clicked = []
+    grid = updateGrid()
     if (keyboard.is_pressed('q')):
         print("YOU PRESSED EXIT")
         break
-    grid = updateGrid()
-    noMoves, bestMove = moves(grid)
-    if noMoves:
-        counter += 1
-    else:
-        counter = 0
+    runProgram()
+    mouse.move(270, 154)
+    # moveMouse(154, 430)
+    mouse.click('left')
+    mouse.move(5, 5)
 
-    if (counter >= 5):
-        print(bestMove)
-        moveMouse(bestMove[0], bestMove[1])
